@@ -6,10 +6,12 @@ package me.kobosil.picturecrypt.async;
 public class TaskResult {
     private Object data;
     private boolean error = false;
+    private MyAsyncTask task;
 
-    public TaskResult(Object data, boolean error) {
+    public TaskResult(Object data, boolean error, MyAsyncTask task) {
         this.data = data;
         this.error = error;
+        this.task = task;
     }
 
     public Object getData() {
@@ -26,5 +28,13 @@ public class TaskResult {
 
     public void setError(boolean error) {
         this.error = error;
+    }
+
+    public MyAsyncTask getTask() {
+        return task;
+    }
+
+    public void setTask(MyAsyncTask task) {
+        this.task = task;
     }
 }

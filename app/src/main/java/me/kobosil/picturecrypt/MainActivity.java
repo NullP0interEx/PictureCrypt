@@ -4,7 +4,7 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
+import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -14,13 +14,21 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import me.kobosil.picturecrypt.async.MyAsyncTask;
+import me.kobosil.picturecrypt.async.TaskResult;
+import me.kobosil.picturecrypt.async.interfaces.AsyncCallBack;
+import me.kobosil.picturecrypt.async.interfaces.CustomAsyncTask;
+import me.kobosil.picturecrypt.tools.FileEncryption;
 
 
 public class MainActivity extends AppCompatActivity {
 
     private static AppCompatActivity mainActivity;
-    private static final int STORAGE_PERMISSION_RC = 112;
 
 
 
@@ -42,16 +50,25 @@ public class MainActivity extends AppCompatActivity {
                 isStoragePermissionGranted();
             }
         });
-
+        isStoragePermissionGranted();
     }
+
 
 
     @Override
     protected void onResume() {
         super.onResume();
+        try {
 
+            File file_ori = new File(Environment.getExternalStorageDirectory() + "/WhatsApp/Media/WhatsApp Images/Sent/");
+            files = new ArrayList<File>(Arrays.asList(file_ori.listFiles()));
+            nextFiles();
 
-       // FileEncryption crypter = new FileEncryption();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        //FileEncryption crypter = new FileEncryption();
         //crypter.test();
     }
 

@@ -23,7 +23,7 @@ public class MyAsyncTask extends AsyncTask<Void, Void, Void> {
 
     @Override
     protected Void doInBackground(Void... voids) {
-        final TaskResult taskResult = new TaskResult(data, false);
+        final TaskResult taskResult = new TaskResult(data, false, this);
         try {
             asyncTask.run(taskResult);
         } catch (Exception e) {
