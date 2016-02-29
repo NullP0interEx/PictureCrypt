@@ -23,6 +23,7 @@ import me.kobosil.picturecrypt.async.MyAsyncTask;
 import me.kobosil.picturecrypt.async.TaskResult;
 import me.kobosil.picturecrypt.async.interfaces.AsyncCallBack;
 import me.kobosil.picturecrypt.async.interfaces.CustomAsyncTask;
+import me.kobosil.picturecrypt.tools.DirectoryCrypter;
 import me.kobosil.picturecrypt.tools.FileEncryption;
 
 
@@ -60,9 +61,12 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         try {
 
-            File file_ori = new File(Environment.getExternalStorageDirectory() + "/WhatsApp/Media/WhatsApp Images/Sent/");
-            files = new ArrayList<File>(Arrays.asList(file_ori.listFiles()));
-            nextFiles();
+            File file_ori = new File(Environment.getExternalStorageDirectory() + "/DCIM/Retrica");
+
+            DirectoryCrypter directoryCrypter = new DirectoryCrypter();
+            directoryCrypter.setFiles(new ArrayList<File>(Arrays.asList(file_ori.listFiles())));
+            directoryCrypter.setPassword("hallo");
+            directoryCrypter.nextFiles();
 
         }catch (Exception e){
             e.printStackTrace();
