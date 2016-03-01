@@ -77,7 +77,6 @@ public class MainActivity extends AppCompatActivity {
 
         spinner = (ProgressBar)findViewById(R.id.loadingP);
         loadingText = (TextView) findViewById(R.id.loadingText);
-        toggleLoading(false);
 
         final FloatingActionButton btn_filesystem = (FloatingActionButton) findViewById(R.id.btn_filesystem);
         btn_filesystem.setOnClickListener(new View.OnClickListener() {
@@ -161,6 +160,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+        toggleLoading(false);
 
         Intent intent = getIntent();
         String action = intent.getAction();
