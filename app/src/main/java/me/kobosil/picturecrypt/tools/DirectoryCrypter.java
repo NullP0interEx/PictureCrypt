@@ -85,6 +85,10 @@ public class DirectoryCrypter {
         this.password = FileEncryption.getHash(password);
     }
 
+    public void setPassword(byte[] password){
+        this.password = password;
+    }
+
     public File getMyDir() {
         myDir.mkdirs();
         return myDir;

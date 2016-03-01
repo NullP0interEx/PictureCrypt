@@ -11,7 +11,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -31,6 +30,7 @@ public class GridViewAdapter extends ArrayAdapter {
     private int layoutResourceId;
     private ArrayList data = new ArrayList();
     private int size = 200;
+    private byte[] password = new byte[10];
     private HashMap<ImageView, MyAsyncTask> myAsyncTaskHashMap = new HashMap<>();
 
     public GridViewAdapter(int layoutResourceId, ArrayList data) {
@@ -96,7 +96,7 @@ public class GridViewAdapter extends ArrayAdapter {
         public void error(TaskResult data) {
             Object[] data_ = (Object[])data.getData();
             ViewHolder holder = (ViewHolder)data_[1];
-            holder.image.setImageResource(0);
+            holder.image.setImageResource(R.drawable.locked);
         }
     };
 
@@ -113,10 +113,12 @@ public class GridViewAdapter extends ArrayAdapter {
             (new File(item.getImage().getAbsolutePath().substring(0,item.getImage().getAbsolutePath().lastIndexOf(File.separator)) + "/thumbnail/")).mkdirs();
             File thumbnail = new File(item.getImage().getAbsolutePath().substring(0,item.getImage().getAbsolutePath().lastIndexOf(File.separator)) + "/thumbnail/mini_" + item.getImage().getName());
 
-            Bitmap source; //BitmapFactory.decodeFile((thumbnail.exists() ? thumbnail : item.getImage()).getAbsolutePath());
-            source = BitmapFactory.decodeStream(FileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), FileEncryption.getHash("hallo")));
+            Bitmap source = BitmapFactory.decodeStream(FileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), password));
 
-
+            if(source == null){
+                taskResult.setError(true);
+                return null;
+            }
 
             int size = Math.min(source.getWidth(), source.getHeight());
             int x = (source.getWidth() - size) / 2;
@@ -127,7 +129,7 @@ public class GridViewAdapter extends ArrayAdapter {
             }
 
             if(thumbnail != null){
-                FileEncryption.encryptImage(result, thumbnail,  FileEncryption.getHash("hallo"));
+                FileEncryption.encryptImage(result, thumbnail,  password);
             }
 
             data[2] = result;
@@ -143,5 +145,13 @@ public class GridViewAdapter extends ArrayAdapter {
     static class ViewHolder {
         TextView imageTitle;
         ImageView image;
+    }
+
+    public byte[] getPassword() {
+        return password;
+    }
+
+    public void setPassword(byte[] password) {
+        this.password = password;
     }
 }

@@ -1,15 +1,13 @@
 package me.kobosil.picturecrypt;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.TypedArray;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -17,6 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AdapterView;
 import android.widget.GridView;
 
 import com.crashlytics.android.Crashlytics;
@@ -28,7 +27,7 @@ import java.util.Arrays;
 import me.kobosil.picturecrypt.adapter.GridViewAdapter;
 import me.kobosil.picturecrypt.models.ImageItem;
 import me.kobosil.picturecrypt.tools.DirectoryCrypter;
-import me.kobosil.picturecrypt.tools.DirectoryDeCrypter;
+import me.kobosil.picturecrypt.tools.FileEncryption;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -36,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private static AppCompatActivity mainActivity;
     private GridView gridView;
     private GridViewAdapter gridAdapter;
+    private byte[] password = new byte[10];
 
 
 
@@ -53,15 +53,48 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                reloadGrid();
+                File file_in = new File(Environment.getExternalStorageDirectory() + "/Pictures/Instagram");
+
+                DirectoryCrypter directoryCrypter = new DirectoryCrypter();
+                directoryCrypter.setFiles(new ArrayList<File>(Arrays.asList(file_in.listFiles())));
+                directoryCrypter.setPassword(password);
+                directoryCrypter.nextFiles();
             }
         });
         isStoragePermissionGranted();
 
         gridView = (GridView) findViewById(R.id.gridView);
-        reloadGrid();
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+                ImageItem item = (ImageItem) parent.getItemAtPosition(position);
+                //Create intent
+               /* Intent intent = new Intent(MainActivity.this, DetailsActivity.class);
+                intent.putExtra("title", item.getTitle());
+                intent.putExtra("image", item.getImage());
+
+                //Start details activity
+                startActivity(intent);*/
+            }
+        });
+        Intent i = new Intent(this, MyConfirmPatternActivity.class);
+        startActivityForResult(i, 1);
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        if (requestCode == 1) {
+            if(resultCode == Activity.RESULT_OK){
+                String pattern = data.getStringExtra("pattern");
+                this.password = FileEncryption.getHash(pattern);
+                reloadGrid();
+            }
+            if (resultCode == Activity.RESULT_CANCELED) {
+                finish();
+                return;
+            }
+        }
     }
 
     private ArrayList<ImageItem> getData() {
@@ -79,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void reloadGrid(){
         gridAdapter = new GridViewAdapter(R.layout.grid_item_layout, getData());
+        gridAdapter.setPassword(password);
         gridView.setAdapter(gridAdapter);
         gridView.invalidate();
     }
@@ -89,14 +123,15 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         try {
-
-            File file_in = new File(Environment.getExternalStorageDirectory() + "/Pictures/Screenshots");
-            File file_inCrypted = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted");
 /*
+            File file_in = new File(Environment.getExternalStorageDirectory() + "/WhatsApp/Media/WhatsApp Images/");
+            File file_inCrypted = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted");
+
             DirectoryCrypter directoryCrypter = new DirectoryCrypter();
             directoryCrypter.setFiles(new ArrayList<File>(Arrays.asList(file_in.listFiles())));
             directoryCrypter.setPassword("hallo");
             directoryCrypter.nextFiles();
+
 
             DirectoryDeCrypter directoryDeCrypter = new DirectoryDeCrypter();
             directoryDeCrypter.setFiles(new ArrayList<File>(Arrays.asList(file_inCrypted.listFiles())));
@@ -157,6 +192,12 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            return true;
+        }
+
+        if (id == R.id.action_password) {
+            Intent i = new Intent(this, MyConfirmPatternActivity.class);
+            startActivityForResult(i, 1);
             return true;
         }
 

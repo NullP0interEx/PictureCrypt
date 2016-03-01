@@ -22,6 +22,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".MyConfirmPatternActivity" >
+        </activity>
+        <activity android:name=".MySetPatternActivity" >
+        </activity>
         <meta-data
             android:name="io.fabric.ApiKey"
             android:value="d63c4831085edb071c90246d67722f773de6962c" />
