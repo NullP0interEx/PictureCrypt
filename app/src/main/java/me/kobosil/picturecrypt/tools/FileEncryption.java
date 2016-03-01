@@ -30,30 +30,8 @@ import me.kobosil.picturecrypt.MainActivity;
  */
 public class FileEncryption {
 
-
-    /*public void test(){
-        File myDir = MainActivity.getMainActivity().getFilesDir();
-        File file_ori = new File(Environment.getExternalStorageDirectory() + "/Pictures/Instagram/IMG_20160115_170328.jpg");
-        File file_crypted = new File(myDir + "/IMAG0002.jpg.crypt");
-        File file_decrypted = new File(myDir + "/IMAG0002_decrypted.jpg");
-
-        String string = "hello world!7777";
-        try {
-          /*  FileOutputStream fos = new FileOutputStream(file_ori);
-            fos.write(string.getBytes());
-            fos.flush();
-            fos.close();
-            timings.addSplit("write file");*//*
-            encrypt(file_ori, file_crypted, "test1");
-            Log.d("fcrypt", "encrypted " + file_crypted.getAbsolutePath());
-            decrypt(file_crypted, file_decrypted, "test1");
-            Log.d("fcrypt", "decrypted " + file_decrypted.getAbsolutePath());
-        }catch (Exception e){
-e.printStackTrace();
-        }
-    }*/
-
     public static void encrypt(File in, File out,  byte[] password) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
         // Here you read the cleartext.
         FileInputStream fis = new FileInputStream(in);
         // This stream write the encrypted text. This stream will be wrapped by another stream.
@@ -82,6 +60,7 @@ e.printStackTrace();
     public static void decrypt(File in, File out, byte[] password) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
         FileInputStream fis = new FileInputStream(in);
 
+        (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
         FileOutputStream fos = new FileOutputStream(out);
         SecretKeySpec sks = new SecretKeySpec(password, "AES");
         Cipher cipher = Cipher.getInstance("AES");
@@ -98,6 +77,7 @@ e.printStackTrace();
     }
 
     public static CipherInputStream decryptStream(File in, byte[] password) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
         FileInputStream fis = new FileInputStream(in);
         SecretKeySpec sks = new SecretKeySpec(password, "AES");
         Cipher cipher = Cipher.getInstance("AES");
@@ -106,6 +86,7 @@ e.printStackTrace();
     }
 
     public static void encryptImage(Bitmap in, File out, byte[] password) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
         FileOutputStream fos = new FileOutputStream(out);
         SecretKeySpec sks = new SecretKeySpec(password, "AES");
         Cipher cipher = Cipher.getInstance("AES");

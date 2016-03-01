@@ -12,6 +12,7 @@ apply plugin: 'io.fabric'
 
 repositories {
     maven { url 'https://maven.fabric.io/public' }
+    maven { url "https://jitpack.io" }
 }
 
 
@@ -43,4 +44,6 @@ dependencies {
         transitive = true;
     }
     compile 'me.zhanghai.android.patternlock:library:2.0.2'
+    compile 'com.getbase:floatingactionbutton:1.10.1'
+    compile 'com.nononsenseapps:filepicker:2.5.2'
 }
