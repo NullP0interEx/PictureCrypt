@@ -24,6 +24,7 @@ import me.kobosil.picturecrypt.async.TaskResult;
 import me.kobosil.picturecrypt.async.interfaces.AsyncCallBack;
 import me.kobosil.picturecrypt.async.interfaces.CustomAsyncTask;
 import me.kobosil.picturecrypt.tools.DirectoryCrypter;
+import me.kobosil.picturecrypt.tools.DirectoryDeCrypter;
 import me.kobosil.picturecrypt.tools.FileEncryption;
 
 
@@ -61,12 +62,18 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         try {
 
-            File file_ori = new File(Environment.getExternalStorageDirectory() + "/DCIM/Retrica");
+            File file_in = new File(Environment.getExternalStorageDirectory() + "/Pictures/Screenshots");
+            File file_inCrypted = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted");
 
             DirectoryCrypter directoryCrypter = new DirectoryCrypter();
-            directoryCrypter.setFiles(new ArrayList<File>(Arrays.asList(file_ori.listFiles())));
+            directoryCrypter.setFiles(new ArrayList<File>(Arrays.asList(file_in.listFiles())));
             directoryCrypter.setPassword("hallo");
             directoryCrypter.nextFiles();
+
+            DirectoryDeCrypter directoryDeCrypter = new DirectoryDeCrypter();
+            directoryDeCrypter.setFiles(new ArrayList<File>(Arrays.asList(file_inCrypted.listFiles())));
+            directoryDeCrypter.setPassword("hallo");
+            directoryDeCrypter.nextFiles();
 
         }catch (Exception e){
             e.printStackTrace();

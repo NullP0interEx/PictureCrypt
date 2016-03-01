@@ -19,20 +19,24 @@ public class DirectoryDeCrypter {
     private byte[] password;
     private ArrayList<File> files;
     private ArrayList<MyAsyncTask> myAsyncTasks = new ArrayList<>();
-    private File myDir = new File(MainActivity.getMainActivity().getFilesDir() + "/crypted");
+    private File myDir = new File(MainActivity.getMainActivity().getFilesDir() + "/.decrypted");
 
     AsyncCallBack callBack = new AsyncCallBack() {
         @Override
         public void done(TaskResult data) {
-            data.getTask().cancel(true);
             myAsyncTasks.remove(data.getTask());
+            data.getTask().cancel(true);
+            data.setTask(null);
+            data = null;
             nextFiles();
         }
 
         @Override
         public void error(TaskResult data) {
-            data.getTask().cancel(true);
             myAsyncTasks.remove(data.getTask());
+            data.getTask().cancel(true);
+            data.setTask(null);
+            data = null;
             nextFiles();
         }
     };
@@ -42,11 +46,15 @@ public class DirectoryDeCrypter {
         public TaskResult run(TaskResult taskResult) {
 
             File file = (File)taskResult.getData();
-            File file_out = new File(myDir + "/" + file.getName() +".crypt");
+            if(!file.getName().contains(".crypt")) {
+                taskResult.setError(true);
+                return null;
+            }
+            File file_out = new File(myDir + "/" + file.getName().replace(".crypt", ""));
             taskResult.setData(file_out);
             try {
                 FileEncryption.decrypt(file, file_out, password);
-                Log.d("fcrypt", "decrypted " + file.getAbsolutePath());
+                Log.d("fcrypt", "decrypted " + file_out.getAbsolutePath());
             }catch (Exception e){
                 e.printStackTrace();
             }

@@ -21,20 +21,24 @@ public class DirectoryCrypter {
     private byte[] password;
     private ArrayList<File> files;
     private ArrayList<MyAsyncTask> myAsyncTasks = new ArrayList<>();
-    private File myDir = new File(MainActivity.getMainActivity().getFilesDir() + "/crypted");
+    private File myDir = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted");
 
     AsyncCallBack callBack = new AsyncCallBack() {
         @Override
         public void done(TaskResult data) {
-            data.getTask().cancel(true);
             myAsyncTasks.remove(data.getTask());
+            data.getTask().cancel(true);
+            data.setTask(null);
+            data = null;
             nextFiles();
         }
 
         @Override
         public void error(TaskResult data) {
-            data.getTask().cancel(true);
             myAsyncTasks.remove(data.getTask());
+            data.getTask().cancel(true);
+            data.setTask(null);
+            data = null;
             nextFiles();
         }
     };
