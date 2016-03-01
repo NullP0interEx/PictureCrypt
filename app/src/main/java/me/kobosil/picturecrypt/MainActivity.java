@@ -2,6 +2,9 @@ package me.kobosil.picturecrypt;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.content.res.TypedArray;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -14,29 +17,32 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.GridView;
 
+import com.crashlytics.android.Crashlytics;
+import io.fabric.sdk.android.Fabric;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import me.kobosil.picturecrypt.async.MyAsyncTask;
-import me.kobosil.picturecrypt.async.TaskResult;
-import me.kobosil.picturecrypt.async.interfaces.AsyncCallBack;
-import me.kobosil.picturecrypt.async.interfaces.CustomAsyncTask;
+import me.kobosil.picturecrypt.adapter.GridViewAdapter;
+import me.kobosil.picturecrypt.models.ImageItem;
 import me.kobosil.picturecrypt.tools.DirectoryCrypter;
 import me.kobosil.picturecrypt.tools.DirectoryDeCrypter;
-import me.kobosil.picturecrypt.tools.FileEncryption;
 
 
 public class MainActivity extends AppCompatActivity {
 
     private static AppCompatActivity mainActivity;
+    private GridView gridView;
+    private GridViewAdapter gridAdapter;
 
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Fabric.with(this, new Crashlytics());
         setContentView(R.layout.activity_main);
         mainActivity = this;
 
@@ -49,22 +55,44 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
-                isStoragePermissionGranted();
+                reloadGrid();
             }
         });
         isStoragePermissionGranted();
+
+        gridView = (GridView) findViewById(R.id.gridView);
+        reloadGrid();
     }
 
+    private ArrayList<ImageItem> getData() {
+        final ArrayList<ImageItem> imageItems = new ArrayList<>();
+        File myDir = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted");
+
+        if(myDir.listFiles() != null)
+        for(File f : myDir.listFiles()) {
+            if(f.isFile())
+                imageItems.add(new ImageItem(f, f.getName()));
+        }
+
+        return imageItems;
+    }
+
+    private void reloadGrid(){
+        gridAdapter = new GridViewAdapter(R.layout.grid_item_layout, getData());
+        gridView.setAdapter(gridAdapter);
+        gridView.invalidate();
+    }
 
 
     @Override
     protected void onResume() {
         super.onResume();
+
         try {
 
             File file_in = new File(Environment.getExternalStorageDirectory() + "/Pictures/Screenshots");
             File file_inCrypted = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted");
-
+/*
             DirectoryCrypter directoryCrypter = new DirectoryCrypter();
             directoryCrypter.setFiles(new ArrayList<File>(Arrays.asList(file_in.listFiles())));
             directoryCrypter.setPassword("hallo");
@@ -73,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
             DirectoryDeCrypter directoryDeCrypter = new DirectoryDeCrypter();
             directoryDeCrypter.setFiles(new ArrayList<File>(Arrays.asList(file_inCrypted.listFiles())));
             directoryDeCrypter.setPassword("hallo");
-            directoryDeCrypter.nextFiles();
+            directoryDeCrypter.nextFiles();*/
 
         }catch (Exception e){
             e.printStackTrace();

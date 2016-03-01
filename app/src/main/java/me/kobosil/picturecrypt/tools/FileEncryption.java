@@ -1,6 +1,7 @@
 package me.kobosil.picturecrypt.tools;
 
 import android.Manifest;
+import android.graphics.Bitmap;
 import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
@@ -94,6 +95,25 @@ e.printStackTrace();
         fos.flush();
         fos.close();
         cis.close();
+    }
+
+    public static CipherInputStream decryptStream(File in, byte[] password) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        FileInputStream fis = new FileInputStream(in);
+        SecretKeySpec sks = new SecretKeySpec(password, "AES");
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.DECRYPT_MODE, sks);
+        return new CipherInputStream(fis, cipher);
+    }
+
+    public static void encryptImage(Bitmap in, File out, byte[] password) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+        FileOutputStream fos = new FileOutputStream(out);
+        SecretKeySpec sks = new SecretKeySpec(password, "AES");
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, sks);
+        CipherOutputStream cos = new CipherOutputStream(fos, cipher);
+        in.compress(Bitmap.CompressFormat.PNG, 85, cos);
+        cos.flush();
+        cos.close();
     }
 
     public static byte[] getHash(String password)  {
