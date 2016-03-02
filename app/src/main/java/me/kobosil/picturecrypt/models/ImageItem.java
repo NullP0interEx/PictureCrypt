@@ -1,6 +1,5 @@
 package me.kobosil.picturecrypt.models;
 
-import android.graphics.Bitmap;
 
 import java.io.File;
 

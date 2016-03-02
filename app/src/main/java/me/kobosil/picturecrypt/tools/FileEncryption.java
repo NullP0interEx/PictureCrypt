@@ -32,26 +32,17 @@ public class FileEncryption {
 
     public static void encrypt(File in, File out,  byte[] password) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
         (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
-        // Here you read the cleartext.
         FileInputStream fis = new FileInputStream(in);
-        // This stream write the encrypted text. This stream will be wrapped by another stream.
         FileOutputStream fos = new FileOutputStream(out);
-
-        // Length is 16 byte
-        // Careful when taking user input!!! http://stackoverflow.com/a/3452620/1188357
         SecretKeySpec sks = new SecretKeySpec(password, "AES");
-        // Create cipher
         Cipher cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.ENCRYPT_MODE, sks);
-        // Wrap the output stream
         CipherOutputStream cos = new CipherOutputStream(fos, cipher);
-        // Write bytes
         int b;
         byte[] d = new byte[8];
         while((b = fis.read(d)) != -1) {
             cos.write(d, 0, b);
         }
-        // Flush and close streams.
         cos.flush();
         cos.close();
         fis.close();
@@ -102,7 +93,7 @@ public class FileEncryption {
         try{
             MessageDigest sha = MessageDigest.getInstance("SHA-1");
             key = sha.digest(key);
-            key = Arrays.copyOf(key, 16); // use only first 128 bit
+            key = Arrays.copyOf(key, 16);
         }catch (Exception e){
             e.printStackTrace();
         }
