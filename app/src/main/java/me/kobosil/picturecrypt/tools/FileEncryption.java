@@ -1,17 +1,12 @@
 package me.kobosil.picturecrypt.tools;
 
-import android.Manifest;
 import android.graphics.Bitmap;
-import android.os.Environment;
 import android.provider.Settings;
-import android.util.Log;
-import android.util.TimingLogger;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
