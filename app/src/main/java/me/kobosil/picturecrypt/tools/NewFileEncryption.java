@@ -5,21 +5,31 @@ import android.provider.Settings;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
 import java.security.Security;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import me.kobosil.picturecrypt.MainActivity;
@@ -29,13 +39,12 @@ import me.kobosil.picturecrypt.MainActivity;
  */
 public class NewFileEncryption {
 
-    public static byte[] keyBytes = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
-            0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17 };
-    public static byte[] ivBytes = new byte[] { 0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x01 };
-
-    public static void encrypt(File in, File out,  byte[] keyBytes,  byte[] ivBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
+    public static void encrypt(File in, File out,  byte[] keyBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
         (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
+
+        File ivBytesFile = new File(out.getAbsolutePath() + ".iv");
+        byte[] ivBytes = getIvBytes();
+        writeIvBytes(ivBytesFile, ivBytes);
 
         FileInputStream fis = new FileInputStream(in);
         FileOutputStream fos = new FileOutputStream(out);
@@ -55,10 +64,13 @@ public class NewFileEncryption {
         fis.close();
     }
 
-    public static void decrypt(File in, File out,  byte[] keyBytes,  byte[] ivBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
+    public static void decrypt(File in, File out,  byte[] keyBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
         FileInputStream fis = new FileInputStream(in);
-
         (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
+
+        File ivBytesFile = new File(in.getAbsolutePath() + ".iv");
+        byte[] ivBytes = readIvBytes(ivBytesFile);
+
         FileOutputStream fos = new FileOutputStream(out);
         SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
         IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
@@ -75,8 +87,12 @@ public class NewFileEncryption {
         cis.close();
     }
 
-    public static CipherInputStream decryptStream(File in,  byte[] keyBytes,  byte[] ivBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
+    public static CipherInputStream decryptStream(File in,  byte[] keyBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
         (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
+
+        File ivBytesFile = new File(in.getAbsolutePath() + ".iv");
+        byte[] ivBytes = readIvBytes(ivBytesFile);
+
         FileInputStream fis = new FileInputStream(in);
         SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
         IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
@@ -85,8 +101,13 @@ public class NewFileEncryption {
         return new CipherInputStream(fis, cipher);
     }
 
-    public static void encryptImage(Bitmap in, File out,  byte[] keyBytes,  byte[] ivBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
+    public static void encryptImage(Bitmap in, File out,  byte[] keyBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
         (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
+
+        File ivBytesFile = new File(out.getAbsolutePath() + ".iv");
+        byte[] ivBytes = getIvBytes();
+        writeIvBytes(ivBytesFile, ivBytes);
+
         FileOutputStream fos = new FileOutputStream(out);
         SecretKeySpec key = new SecretKeySpec(keyBytes, "AES");
         IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
@@ -98,20 +119,71 @@ public class NewFileEncryption {
         cos.close();
     }
 
-    public static byte[] getHash(String password)  {
-        byte[] key = (getDeviceID() + password).getBytes();
-        try{
-            MessageDigest sha = MessageDigest.getInstance("SHA-1");
-            key = sha.digest(key);
-            key = Arrays.copyOf(key, 16);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-        return key;
+    public static SecretKey getPBKDF2(String passphraseSHA1, byte[] salt, int iterations, int keyLength) {
+       try{
+           SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+           KeySpec keySpec = new PBEKeySpec(passphraseSHA1.toCharArray(), salt, iterations, keyLength);
+           SecretKey secretKey = secretKeyFactory.generateSecret(keySpec);
+           return secretKey;
+       }catch(Exception e){
+           e.printStackTrace();
+       }
+        return null;
     }
 
-    public static String getDeviceID(){
-        return Settings.Secure.getString(MainActivity.getMainActivity().getContentResolver(), Settings.Secure.ANDROID_ID);
+    public static byte[] readIvBytes(File file)  {
+        try {
+        byte[] buffer = new byte[(int) file.length()];
+        InputStream ios = null;
+        try {
+            ios = new FileInputStream(file);
+            if (ios.read(buffer) == -1) {
+                throw new IOException(
+                        "EOF reached while trying to read the whole file");
+            }
+        } finally {
+            try {
+                if (ios != null)
+                    ios.close();
+            } catch (IOException e) {
+            }
+        }
+            return buffer;
+        }
+        catch(IOException ioe)
+        {
+            System.out.println("IOException : " + ioe);
+        }
+        return null;
+    }
+
+    public static void writeIvBytes(File file, byte[] ivBytes){
+        try {
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(ivBytes);
+            fos.close();
+        }
+        catch(FileNotFoundException ex)
+        {
+            System.out.println("FileNotFoundException : " + ex);
+        }
+        catch(IOException ioe)
+        {
+            System.out.println("IOException : " + ioe);
+        }
+    }
+
+    public static byte[] getIvBytes(){
+        try {
+            SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+            sr.setSeed((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).getBytes("us-ascii"));
+            return sr.generateSeed(16);
+        }
+        catch(Exception ex)
+        {
+            System.out.println("Exception : " + ex);
+        }
+        return null;
     }
 
 }

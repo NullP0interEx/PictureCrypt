@@ -22,6 +22,7 @@ public class DetailsActivity extends AppCompatActivity {
     private TextView titleTextView;
     private ZoomableImageView imageView;
     private byte[] password = new byte[10];
+    private byte[] secretKey = new byte[10];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +37,7 @@ public class DetailsActivity extends AppCompatActivity {
         String title = bundle.getString("title");
         String image = bundle.getString("image");
         password = bundle.getByteArray("password");
+        secretKey = bundle.getByteArray("secretKey");
 
 
         titleTextView = (TextView) findViewById(R.id.title);
@@ -78,10 +80,10 @@ public class DetailsActivity extends AppCompatActivity {
 
             try{
                 Bitmap image = null;
-                if(file.contains(".crypt"))
+                if((new File(file)).getName().contains(".crypt"))
                     image = BitmapFactory.decodeStream(LegacyFileEncryption.decryptStream((new File(file)), password));
                 else
-                    image = BitmapFactory.decodeStream(NewFileEncryption.decryptStream((new File(file)), NewFileEncryption.keyBytes, NewFileEncryption.ivBytes));
+                    image = BitmapFactory.decodeStream(NewFileEncryption.decryptStream((new File(file)), secretKey));
                 if(image == null)
                     taskResult.setError(true);
                 data[2] = image;

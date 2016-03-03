@@ -6,6 +6,7 @@ import android.content.ClipData;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -19,6 +20,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
@@ -36,9 +38,12 @@ import com.nononsenseapps.filepicker.FilePickerActivity;
 import io.fabric.sdk.android.Fabric;
 import java.io.File;
 import java.io.FileInputStream;
+import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+
+import javax.crypto.SecretKey;
 
 import me.kobosil.picturecrypt.adapter.GridViewAdapter;
 import me.kobosil.picturecrypt.async.MyAsyncTask;
@@ -58,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
     private ProgressBar spinner;
     private TextView loadingText;
     private byte[] password = new byte[10];
+    private SecretKey secretKey;
     private FloatingActionsMenu menuMultipleActions;
     private ArrayList<Uri> waitingImageUris = new ArrayList<>();
 
@@ -78,6 +84,19 @@ public class MainActivity extends AppCompatActivity {
 
         spinner = (ProgressBar)findViewById(R.id.loadingP);
         loadingText = (TextView) findViewById(R.id.loadingText);
+
+        SharedPreferences prefs = this.getSharedPreferences("me.kobosil.picturecrypt", Context.MODE_PRIVATE);
+        if(!prefs.contains("crypto.salt.seed")){
+            try {
+                SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+                sr.setSeed((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).getBytes("us-ascii"));
+                prefs.edit().putString("crypto.salt.seed", Base64.encodeToString(sr.generateSeed(16), Base64.DEFAULT)).apply();
+            }
+            catch(Exception ex){
+                System.out.println("Exception : " + ex);
+            }
+        }
+
 
         final FloatingActionButton btn_filesystem = (FloatingActionButton) findViewById(R.id.btn_filesystem);
         btn_filesystem.setOnClickListener(new View.OnClickListener() {
@@ -127,6 +146,7 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra("title", item.getTitle());
                 intent.putExtra("image", item.getImage().getAbsolutePath());
                 intent.putExtra("password", password);
+                intent.putExtra("secretKey", secretKey.getEncoded());
 
                 //Start details activity
                 startActivity(intent);
@@ -150,8 +170,16 @@ public class MainActivity extends AppCompatActivity {
                         .setPositiveButton(getMainActivity().getString(R.string.yes), new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 File thumbnail = new File(item.getImage().getAbsolutePath().substring(0,item.getImage().getAbsolutePath().lastIndexOf(File.separator)) + "/thumbnail/mini_" + item.getImage().getName());
-                                item.getImage().delete();
-                                thumbnail.delete();
+                                File ivBytesFile = new File(item.getImage().getAbsolutePath() + ".iv");
+                                File thumbnailIvBytesFile = new File(thumbnail.getAbsolutePath() + ".iv");
+                                if(item.getImage().exists())
+                                    item.getImage().delete();
+                                if(thumbnail.exists())
+                                    thumbnail.delete();
+                                if(ivBytesFile.exists())
+                                    ivBytesFile.delete();
+                                if(thumbnailIvBytesFile.exists())
+                                    thumbnailIvBytesFile.delete();
                                 reloadGrid();
                             }
                         });
@@ -233,7 +261,7 @@ public class MainActivity extends AppCompatActivity {
                     if(selectedOut.getName().contains(".crypt"))
                         LegacyFileEncryption.encryptImage((Bitmap)data[0], selectedOut,  password);
                     else
-                        NewFileEncryption.encryptImage((Bitmap)data[0], selectedOut, NewFileEncryption.keyBytes, NewFileEncryption.ivBytes);
+                        NewFileEncryption.encryptImage((Bitmap)data[0], selectedOut, secretKey.getEncoded());
 
                 }catch (Exception e){
                     taskResult.setError(true);
@@ -250,7 +278,7 @@ public class MainActivity extends AppCompatActivity {
                 if(selectedOut.getName().contains(".crypt"))
                     LegacyFileEncryption.encryptImage(BitmapFactory.decodeStream(new FileInputStream(selectedImage)), selectedOut,  password);
                 else
-                    NewFileEncryption.encryptImage(BitmapFactory.decodeStream(new FileInputStream(selectedImage)), selectedOut, NewFileEncryption.keyBytes, NewFileEncryption.ivBytes);
+                    NewFileEncryption.encryptImage(BitmapFactory.decodeStream(new FileInputStream(selectedImage)), selectedOut, secretKey.getEncoded());
 
 
             }catch (Exception e){
@@ -270,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         Object[] data_ = new Object[3];
                         data_[0] = new File(getRealPathFromUri(getMainActivity(), data.getData()));
-                        data_[1] = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/" + ((File)data_[0]).getName() + ".crypt");
+                        data_[1] = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/" + ((File)data_[0]).getName() + ".2crypt");
                         data_[2] = password;
 
                         MyAsyncTask myAsyncTask = new MyAsyncTask(task, data_, callBack);
@@ -284,7 +312,9 @@ public class MainActivity extends AppCompatActivity {
             case 1:
                 if(resultCode == Activity.RESULT_OK){
                     String pattern = data.getStringExtra("pattern");
+                    SharedPreferences prefs = this.getSharedPreferences("me.kobosil.picturecrypt", Context.MODE_PRIVATE);
                     this.password = LegacyFileEncryption.getHash(pattern);
+                    this.secretKey = NewFileEncryption.getPBKDF2(pattern, Base64.decode(prefs.getString("crypto.salt.seed", "").getBytes(), Base64.DEFAULT), 1000, 128);
                     if(!waitingImageUris.isEmpty()){
                         for(Uri uri : waitingImageUris)
                             startEncryptionFromUri(uri);
@@ -307,7 +337,7 @@ public class MainActivity extends AppCompatActivity {
 
                     Object[] data_ = new Object[3];
                     data_[0] = imageBitmap;
-                    data_[1] = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/" + timeStamp + ".png.crypt");
+                    data_[1] = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/" + timeStamp + ".png.2crypt");
                     data_[2] = password;
 
                     MyAsyncTask myAsyncTask = new MyAsyncTask(task, data_, callBack);
@@ -353,7 +383,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             Object[] data_ = new Object[3];
             data_[0] = new File(uri.getPath());
-            data_[1] = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/" + ((File)data_[0]).getName() + ".crypt");
+            data_[1] = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/" + ((File)data_[0]).getName() + ".2crypt");
             data_[2] = password;
 
             MyAsyncTask myAsyncTask = new MyAsyncTask(task, data_, callBack);
@@ -370,6 +400,7 @@ public class MainActivity extends AppCompatActivity {
         if(myDir.listFiles() != null)
         for(File f : myDir.listFiles()) {
             if(f.isFile())
+                if(!f.getName().contains(".iv"))
                 imageItems.add(new ImageItem(f, f.getName()));
         }
 
@@ -377,7 +408,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void reloadGrid(){
-        gridAdapter = new GridViewAdapter(R.layout.grid_item_layout, getData());
+        gridAdapter = new GridViewAdapter(R.layout.grid_item_layout, getData(), secretKey);
         gridAdapter.setPassword(password);
         gridView.setAdapter(gridAdapter);
         gridView.invalidate();

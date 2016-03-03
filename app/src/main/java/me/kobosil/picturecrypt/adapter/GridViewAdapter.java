@@ -14,6 +14,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import javax.crypto.SecretKey;
+
 import me.kobosil.picturecrypt.MainActivity;
 import me.kobosil.picturecrypt.R;
 import me.kobosil.picturecrypt.async.MyAsyncTask;
@@ -32,12 +34,14 @@ public class GridViewAdapter extends ArrayAdapter {
     private ArrayList data = new ArrayList();
     private int size = 200;
     private byte[] password = new byte[10];
+    private SecretKey secretKey;
     private HashMap<ImageView, MyAsyncTask> myAsyncTaskHashMap = new HashMap<>();
 
-    public GridViewAdapter(int layoutResourceId, ArrayList data) {
+    public GridViewAdapter(int layoutResourceId, ArrayList data, SecretKey secretKey) {
         super(MainActivity.getMainActivity(), layoutResourceId, data);
         this.layoutResourceId = layoutResourceId;
         this.data = data;
+        this.secretKey = secretKey;
     }
 
     @Override
@@ -119,7 +123,7 @@ public class GridViewAdapter extends ArrayAdapter {
                 if(item.getImage().getName().contains(".crypt"))
                     source = BitmapFactory.decodeStream(LegacyFileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), password));
                 else
-                    source = BitmapFactory.decodeStream(NewFileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), NewFileEncryption.keyBytes, NewFileEncryption.ivBytes));
+                    source = BitmapFactory.decodeStream(NewFileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), secretKey.getEncoded()));
 
                 if(source == null){
                 taskResult.setError(true);
@@ -138,7 +142,7 @@ public class GridViewAdapter extends ArrayAdapter {
                 if(thumbnail.getName().contains(".crypt"))
                     LegacyFileEncryption.encryptImage(result, thumbnail,  password);
                 else
-                    NewFileEncryption.encryptImage(result, thumbnail, NewFileEncryption.keyBytes, NewFileEncryption.ivBytes);
+                    NewFileEncryption.encryptImage(result, thumbnail, secretKey.getEncoded());
 
             }
 
