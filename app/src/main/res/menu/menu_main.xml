@@ -10,9 +10,8 @@
 
     <item
         android:id="@+id/action_password"
+        android:icon="@drawable/locker"
         android:orderInCategory="200"
         android:title="Unlock"
-        android:icon="@drawable/locker"
-        app:showAsAction="ifRoom"
-        ></item>
+        app:showAsAction="ifRoom"></item>
 </menu>

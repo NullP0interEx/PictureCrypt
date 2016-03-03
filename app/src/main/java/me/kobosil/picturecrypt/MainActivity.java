@@ -22,9 +22,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Base64;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.ProgressBar;
@@ -35,7 +35,6 @@ import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.nononsenseapps.filepicker.FilePickerActivity;
 
-import io.fabric.sdk.android.Fabric;
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.SecureRandom;
@@ -45,6 +44,7 @@ import java.util.Date;
 
 import javax.crypto.SecretKey;
 
+import io.fabric.sdk.android.Fabric;
 import me.kobosil.picturecrypt.adapter.GridViewAdapter;
 import me.kobosil.picturecrypt.async.MyAsyncTask;
 import me.kobosil.picturecrypt.async.TaskResult;
@@ -57,6 +57,9 @@ import me.kobosil.picturecrypt.tools.NewFileEncryption;
 
 public class MainActivity extends AppCompatActivity {
 
+    static final int REQUEST_IMAGE_CAPTURE = 2;
+    static final int FILE_CODE = 3;
+    private static final int SELECT_PHOTO = 100;
     private static AppCompatActivity mainActivity;
     private GridView gridView;
     private GridViewAdapter gridAdapter;
@@ -64,12 +67,89 @@ public class MainActivity extends AppCompatActivity {
     private TextView loadingText;
     private byte[] password = new byte[10];
     private SecretKey secretKey;
+    AsyncCallBack callBack = new AsyncCallBack() {
+        @Override
+        public void done(TaskResult data) {
+            toggleLoading(false);
+            loadingText.setText("OK: " + ((File) ((Object[]) data.getData())[1]).getName());
+            reloadGrid();
+        }
+
+        @Override
+        public void error(TaskResult data) {
+            toggleLoading(false);
+            loadingText.setText("OK: " + ((File) ((Object[]) data.getData())[1]).getName());
+        }
+    };
+    CustomAsyncTask task = new CustomAsyncTask() {
+        @Override
+        public TaskResult run(TaskResult taskResult) {
+            final Object[] data = (Object[]) taskResult.getData();
+            MainActivity.getMainActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    toggleLoading(true);
+                    loadingText.setText("loading: " + ((File) data[1]).getName());
+                }
+            });
+
+            if (data[0] instanceof Bitmap) {
+                File selectedOut = (File) data[1];
+                byte[] password = (byte[]) data[2];
+
+                try {
+
+                    if (selectedOut.getName().contains(".crypt"))
+                        LegacyFileEncryption.encryptImage((Bitmap) data[0], selectedOut, password);
+                    else
+                        NewFileEncryption.encryptImage((Bitmap) data[0], selectedOut, secretKey.getEncoded());
+
+                } catch (Exception e) {
+                    taskResult.setError(true);
+                    e.printStackTrace();
+                }
+                return null;
+            }
+
+            File selectedImage = (File) data[0];
+            File selectedOut = (File) data[1];
+            byte[] password = (byte[]) data[2];
+
+            try {
+                if (selectedOut.getName().contains(".crypt"))
+                    LegacyFileEncryption.encryptImage(BitmapFactory.decodeStream(new FileInputStream(selectedImage)), selectedOut, password);
+                else
+                    NewFileEncryption.encryptImage(BitmapFactory.decodeStream(new FileInputStream(selectedImage)), selectedOut, secretKey.getEncoded());
+
+
+            } catch (Exception e) {
+                taskResult.setError(true);
+                e.printStackTrace();
+            }
+            return null;
+        }
+    };
     private FloatingActionsMenu menuMultipleActions;
     private ArrayList<Uri> waitingImageUris = new ArrayList<>();
 
-    private static final int SELECT_PHOTO = 100;
-    static final int REQUEST_IMAGE_CAPTURE = 2;
-    static final int FILE_CODE = 3;
+    private static String getRealPathFromUri(Context context, Uri contentUri) {
+        Cursor cursor = null;
+        try {
+            String[] proj = {MediaStore.Images.Media.DATA};
+            cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
+            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+            return cursor.getString(column_index);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
+    public static AppCompatActivity getMainActivity() {
+        return mainActivity;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,17 +162,16 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         menuMultipleActions = (FloatingActionsMenu) findViewById(R.id.multiple_actions);
 
-        spinner = (ProgressBar)findViewById(R.id.loadingP);
+        spinner = (ProgressBar) findViewById(R.id.loadingP);
         loadingText = (TextView) findViewById(R.id.loadingText);
 
         SharedPreferences prefs = this.getSharedPreferences("me.kobosil.picturecrypt", Context.MODE_PRIVATE);
-        if(!prefs.contains("crypto.salt.seed")){
+        if (!prefs.contains("crypto.salt.seed")) {
             try {
                 SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
                 sr.setSeed((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).getBytes("us-ascii"));
                 prefs.edit().putString("crypto.salt.seed", Base64.encodeToString(sr.generateSeed(16), Base64.DEFAULT)).apply();
-            }
-            catch(Exception ex){
+            } catch (Exception ex) {
                 System.out.println("Exception : " + ex);
             }
         }
@@ -169,16 +248,16 @@ public class MainActivity extends AppCompatActivity {
                         })
                         .setPositiveButton(getMainActivity().getString(R.string.yes), new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
-                                File thumbnail = new File(item.getImage().getAbsolutePath().substring(0,item.getImage().getAbsolutePath().lastIndexOf(File.separator)) + "/thumbnail/mini_" + item.getImage().getName());
+                                File thumbnail = new File(item.getImage().getAbsolutePath().substring(0, item.getImage().getAbsolutePath().lastIndexOf(File.separator)) + "/thumbnail/mini_" + item.getImage().getName());
                                 File ivBytesFile = new File(item.getImage().getAbsolutePath() + ".iv");
                                 File thumbnailIvBytesFile = new File(thumbnail.getAbsolutePath() + ".iv");
-                                if(item.getImage().exists())
+                                if (item.getImage().exists())
                                     item.getImage().delete();
-                                if(thumbnail.exists())
+                                if (thumbnail.exists())
                                     thumbnail.delete();
-                                if(ivBytesFile.exists())
+                                if (ivBytesFile.exists())
                                     ivBytesFile.delete();
-                                if(thumbnailIvBytesFile.exists())
+                                if (thumbnailIvBytesFile.exists())
                                     thumbnailIvBytesFile.delete();
                                 reloadGrid();
                             }
@@ -197,7 +276,7 @@ public class MainActivity extends AppCompatActivity {
         String type = intent.getType();
 
         if (Intent.ACTION_SEND.equals(action) && type != null) {
-             if (type.startsWith("image/")) {
+            if (type.startsWith("image/")) {
                 handleSendImage(intent);
             }
         } else if (Intent.ACTION_SEND_MULTIPLE.equals(action) && type != null) {
@@ -220,103 +299,39 @@ public class MainActivity extends AppCompatActivity {
     void handleSendMultipleImages(Intent intent) {
         ArrayList<Uri> imageUris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
         if (imageUris != null) {
-            for(Uri imageUri : imageUris)
+            for (Uri imageUri : imageUris)
                 waitingImageUris.add(imageUri);
         }
     }
 
-    AsyncCallBack callBack = new AsyncCallBack() {
-        @Override
-        public void done(TaskResult data) {
-            toggleLoading(false);
-            loadingText.setText("OK: " + ((File)((Object[])data.getData())[1]).getName());
-            reloadGrid();
-        }
-
-        @Override
-        public void error(TaskResult data) {
-            toggleLoading(false);
-            loadingText.setText("OK: " + ((File)((Object[])data.getData())[1]).getName());
-        }
-    };
-
-    CustomAsyncTask task = new CustomAsyncTask() {
-        @Override
-        public TaskResult run(TaskResult taskResult) {
-            final Object[] data = (Object[])taskResult.getData();
-            MainActivity.getMainActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    toggleLoading(true);
-                    loadingText.setText("loading: " + ((File)data[1]).getName());
-                }
-            });
-
-            if(data[0] instanceof Bitmap){
-                File selectedOut = (File)data[1];
-                byte[] password = (byte[])data[2];
-
-                try{
-
-                    if(selectedOut.getName().contains(".crypt"))
-                        LegacyFileEncryption.encryptImage((Bitmap)data[0], selectedOut,  password);
-                    else
-                        NewFileEncryption.encryptImage((Bitmap)data[0], selectedOut, secretKey.getEncoded());
-
-                }catch (Exception e){
-                    taskResult.setError(true);
-                    e.printStackTrace();
-                }
-                return null;
-            }
-
-            File selectedImage = (File)data[0];
-            File selectedOut = (File)data[1];
-            byte[] password = (byte[])data[2];
-
-            try{
-                if(selectedOut.getName().contains(".crypt"))
-                    LegacyFileEncryption.encryptImage(BitmapFactory.decodeStream(new FileInputStream(selectedImage)), selectedOut,  password);
-                else
-                    NewFileEncryption.encryptImage(BitmapFactory.decodeStream(new FileInputStream(selectedImage)), selectedOut, secretKey.getEncoded());
-
-
-            }catch (Exception e){
-                taskResult.setError(true);
-                e.printStackTrace();
-            }
-            return null;
-        }
-    };
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        switch(requestCode) {
+        switch (requestCode) {
             case SELECT_PHOTO:
-                if(resultCode == RESULT_OK){
+                if (resultCode == RESULT_OK) {
                     try {
                         Object[] data_ = new Object[3];
                         data_[0] = new File(getRealPathFromUri(getMainActivity(), data.getData()));
-                        data_[1] = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/" + ((File)data_[0]).getName() + ".2crypt");
+                        data_[1] = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/" + ((File) data_[0]).getName() + ".2crypt");
                         data_[2] = password;
 
                         MyAsyncTask myAsyncTask = new MyAsyncTask(task, data_, callBack);
                         myAsyncTask.execute();
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
                 break;
 
             case 1:
-                if(resultCode == Activity.RESULT_OK){
+                if (resultCode == Activity.RESULT_OK) {
                     String pattern = data.getStringExtra("pattern");
                     SharedPreferences prefs = this.getSharedPreferences("me.kobosil.picturecrypt", Context.MODE_PRIVATE);
                     this.password = LegacyFileEncryption.getHash(pattern);
                     this.secretKey = NewFileEncryption.getPBKDF2(pattern, Base64.decode(prefs.getString("crypto.salt.seed", "").getBytes(), Base64.DEFAULT), 1000, 128);
-                    if(!waitingImageUris.isEmpty()){
-                        for(Uri uri : waitingImageUris)
+                    if (!waitingImageUris.isEmpty()) {
+                        for (Uri uri : waitingImageUris)
                             startEncryptionFromUri(uri);
                         waitingImageUris.clear();
                     }
@@ -363,7 +378,7 @@ public class MainActivity extends AppCompatActivity {
                                     (FilePickerActivity.EXTRA_PATHS);
 
                             if (paths != null) {
-                                for (String path: paths) {
+                                for (String path : paths) {
                                     Uri uri = Uri.parse(path);
                                     startEncryptionFromUri(uri);
                                 }
@@ -379,16 +394,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void startEncryptionFromUri(Uri uri){
+    private void startEncryptionFromUri(Uri uri) {
         try {
             Object[] data_ = new Object[3];
             data_[0] = new File(uri.getPath());
-            data_[1] = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/" + ((File)data_[0]).getName() + ".2crypt");
+            data_[1] = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/" + ((File) data_[0]).getName() + ".2crypt");
             data_[2] = password;
 
             MyAsyncTask myAsyncTask = new MyAsyncTask(task, data_, callBack);
             myAsyncTask.execute();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -397,44 +412,42 @@ public class MainActivity extends AppCompatActivity {
         final ArrayList<ImageItem> imageItems = new ArrayList<>();
         File myDir = new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted");
 
-        if(myDir.listFiles() != null)
-        for(File f : myDir.listFiles()) {
-            if(f.isFile())
-                if(!f.getName().contains(".iv"))
-                imageItems.add(new ImageItem(f, f.getName()));
-        }
+        if (myDir.listFiles() != null)
+            for (File f : myDir.listFiles()) {
+                if (f.isFile())
+                    if (!f.getName().contains(".iv"))
+                        imageItems.add(new ImageItem(f, f.getName()));
+            }
 
         return imageItems;
     }
 
-    private void reloadGrid(){
+    private void reloadGrid() {
         gridAdapter = new GridViewAdapter(R.layout.grid_item_layout, getData(), secretKey);
         gridAdapter.setPassword(password);
         gridView.setAdapter(gridAdapter);
         gridView.invalidate();
     }
 
-
     @Override
     protected void onResume() {
         super.onResume();
     }
 
-    public  boolean isStoragePermissionGranted() {
+    public boolean isStoragePermissionGranted() {
         if (Build.VERSION.SDK_INT >= 23) {
             if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
-                Log.v("sDp","Permission is granted");
+                Log.v("sDp", "Permission is granted");
                 return true;
             } else {
 
-                Log.v("sDp","Permission is revoked");
+                Log.v("sDp", "Permission is revoked");
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
                 return false;
             }
-        }
-        else { //permission is automatically granted on sdk<23 upon installation
-            Log.v("sDp","Permission is granted");
+        } else { //permission is automatically granted on sdk<23 upon installation
+            Log.v("sDp", "Permission is granted");
             return true;
         }
 
@@ -444,8 +457,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if(grantResults[0]== PackageManager.PERMISSION_GRANTED){
-            Log.v("sDp","Permission: "+permissions[0]+ "was "+grantResults[0]);
+        if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            Log.v("sDp", "Permission: " + permissions[0] + "was " + grantResults[0]);
             //resume tasks needing this permission
         }
     }
@@ -478,34 +491,15 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private static String getRealPathFromUri(Context context, Uri contentUri) {
-        Cursor cursor = null;
-        try {
-            String[] proj = { MediaStore.Images.Media.DATA };
-            cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
-            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-            cursor.moveToFirst();
-            return cursor.getString(column_index);
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-    }
-
-    private void toggleLoading(boolean loading){
-        if(loading){
+    private void toggleLoading(boolean loading) {
+        if (loading) {
             gridView.setVisibility(View.GONE);
             spinner.setVisibility(View.VISIBLE);
             loadingText.setVisibility(View.VISIBLE);
-        }else{
+        } else {
             gridView.setVisibility(View.VISIBLE);
             spinner.setVisibility(View.GONE);
             loadingText.setVisibility(View.GONE);
         }
-    }
-
-    public static AppCompatActivity getMainActivity() {
-        return mainActivity;
     }
 }

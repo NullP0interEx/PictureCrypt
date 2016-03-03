@@ -25,7 +25,7 @@ import me.kobosil.picturecrypt.MainActivity;
  */
 public class LegacyFileEncryption {
 
-    public static void encrypt(File in, File out,  byte[] password) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+    public static void encrypt(File in, File out, byte[] password) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
         (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
         FileInputStream fis = new FileInputStream(in);
         FileOutputStream fos = new FileOutputStream(out);
@@ -35,7 +35,7 @@ public class LegacyFileEncryption {
         CipherOutputStream cos = new CipherOutputStream(fos, cipher);
         int b;
         byte[] d = new byte[8];
-        while((b = fis.read(d)) != -1) {
+        while ((b = fis.read(d)) != -1) {
             cos.write(d, 0, b);
         }
         cos.flush();
@@ -54,7 +54,7 @@ public class LegacyFileEncryption {
         CipherInputStream cis = new CipherInputStream(fis, cipher);
         int b;
         byte[] d = new byte[8];
-        while((b = cis.read(d)) != -1) {
+        while ((b = cis.read(d)) != -1) {
             fos.write(d, 0, b);
         }
         fos.flush();
@@ -83,19 +83,19 @@ public class LegacyFileEncryption {
         cos.close();
     }
 
-    public static byte[] getHash(String password)  {
+    public static byte[] getHash(String password) {
         byte[] key = (getDeviceID() + password).getBytes();
-        try{
+        try {
             MessageDigest sha = MessageDigest.getInstance("SHA-1");
             key = sha.digest(key);
             key = Arrays.copyOf(key, 16);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return key;
     }
 
-    public static String getDeviceID(){
+    public static String getDeviceID() {
         return Settings.Secure.getString(MainActivity.getMainActivity().getContentResolver(), Settings.Secure.ANDROID_ID);
     }
 

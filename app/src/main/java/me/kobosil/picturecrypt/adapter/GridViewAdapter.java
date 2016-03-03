@@ -30,11 +30,78 @@ import me.kobosil.picturecrypt.tools.NewFileEncryption;
  * Created by roman on 01.03.2016.
  */
 public class GridViewAdapter extends ArrayAdapter {
+    AsyncCallBack callBack = new AsyncCallBack() {
+        @Override
+        public void done(TaskResult data) {
+            Object[] data_ = (Object[]) data.getData();
+            ViewHolder holder = (ViewHolder) data_[1];
+            Bitmap result = (Bitmap) data_[2];
+
+            holder.image.setImageBitmap(result);
+        }
+
+        @Override
+        public void error(TaskResult data) {
+            Object[] data_ = (Object[]) data.getData();
+            ViewHolder holder = (ViewHolder) data_[1];
+            holder.image.setImageResource(R.drawable.locked);
+        }
+    };
     private int layoutResourceId;
     private ArrayList data = new ArrayList();
     private int size = 200;
     private byte[] password = new byte[10];
     private SecretKey secretKey;
+    CustomAsyncTask task = new CustomAsyncTask() {
+        @Override
+        public TaskResult run(TaskResult taskResult) {
+
+            try {
+
+                Object[] data = (Object[]) taskResult.getData();
+                ImageItem item = (ImageItem) data[0];
+                int size_ = (int) data[2];
+
+                (new File(item.getImage().getAbsolutePath().substring(0, item.getImage().getAbsolutePath().lastIndexOf(File.separator)) + "/thumbnail/")).mkdirs();
+                File thumbnail = new File(item.getImage().getAbsolutePath().substring(0, item.getImage().getAbsolutePath().lastIndexOf(File.separator)) + "/thumbnail/mini_" + item.getImage().getName());
+
+                Bitmap source = null;
+
+                if (item.getImage().getName().contains(".crypt"))
+                    source = BitmapFactory.decodeStream(LegacyFileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), password));
+                else
+                    source = BitmapFactory.decodeStream(NewFileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), secretKey.getEncoded()));
+
+                if (source == null) {
+                    taskResult.setError(true);
+                    return null;
+                }
+
+                int size = Math.min(source.getWidth(), source.getHeight());
+                int x = (source.getWidth() - size) / 2;
+                int y = (source.getHeight() - size) / 2;
+                Bitmap result = Bitmap.createScaledBitmap(Bitmap.createBitmap(source, x, y, size, size), size_, size_, false);
+                if (result != source) {
+                    source.recycle();
+                }
+
+                if (thumbnail != null) {
+                    if (thumbnail.getName().contains(".crypt"))
+                        LegacyFileEncryption.encryptImage(result, thumbnail, password);
+                    else
+                        NewFileEncryption.encryptImage(result, thumbnail, secretKey.getEncoded());
+
+                }
+
+                data[2] = result;
+                taskResult.setData(data);
+            } catch (Exception e) {
+                e.printStackTrace();
+                taskResult.setError(true);
+            }
+            return null;
+        }
+    };
     private HashMap<ImageView, MyAsyncTask> myAsyncTaskHashMap = new HashMap<>();
 
     public GridViewAdapter(int layoutResourceId, ArrayList data, SecretKey secretKey) {
@@ -59,7 +126,7 @@ public class GridViewAdapter extends ArrayAdapter {
             holder.image.post(new Runnable() {
                 @Override
                 public void run() {
-                    if(_holder.image.getMeasuredWidth() != 0 && _holder.image.getMeasuredWidth() > 100)
+                    if (_holder.image.getMeasuredWidth() != 0 && _holder.image.getMeasuredWidth() > 100)
                         size = _holder.image.getMeasuredWidth();
                 }
             });
@@ -68,7 +135,7 @@ public class GridViewAdapter extends ArrayAdapter {
             holder = (ViewHolder) row.getTag();
         }
 
-        ImageItem item = (ImageItem)data.get(position);
+        ImageItem item = (ImageItem) data.get(position);
         holder.imageTitle.setText(item.getTitle());
 
         Object[] data = new Object[3];
@@ -78,87 +145,13 @@ public class GridViewAdapter extends ArrayAdapter {
 
         MyAsyncTask myAsyncTask = new MyAsyncTask(task, data, callBack);
         myAsyncTask.execute();
-        if(myAsyncTaskHashMap.containsKey(holder.image)){
+        if (myAsyncTaskHashMap.containsKey(holder.image)) {
             myAsyncTaskHashMap.get(holder.image).cancel(true);
             myAsyncTaskHashMap.remove(holder.image);
         }
-            myAsyncTaskHashMap.put(holder.image, myAsyncTask);
+        myAsyncTaskHashMap.put(holder.image, myAsyncTask);
         holder.image.setImageResource(0);
         return row;
-    }
-
-    AsyncCallBack callBack = new AsyncCallBack() {
-        @Override
-        public void done(TaskResult data) {
-            Object[] data_ = (Object[])data.getData();
-            ViewHolder holder = (ViewHolder)data_[1];
-            Bitmap result  = (Bitmap)data_[2];
-
-            holder.image.setImageBitmap(result);
-        }
-
-        @Override
-        public void error(TaskResult data) {
-            Object[] data_ = (Object[])data.getData();
-            ViewHolder holder = (ViewHolder)data_[1];
-            holder.image.setImageResource(R.drawable.locked);
-        }
-    };
-
-    CustomAsyncTask task = new CustomAsyncTask() {
-        @Override
-        public TaskResult run(TaskResult taskResult) {
-
-            try{
-
-            Object[] data = (Object[])taskResult.getData();
-            ImageItem item = (ImageItem)data[0];
-            int size_ = (int)data[2];
-
-            (new File(item.getImage().getAbsolutePath().substring(0,item.getImage().getAbsolutePath().lastIndexOf(File.separator)) + "/thumbnail/")).mkdirs();
-            File thumbnail = new File(item.getImage().getAbsolutePath().substring(0,item.getImage().getAbsolutePath().lastIndexOf(File.separator)) + "/thumbnail/mini_" + item.getImage().getName());
-
-            Bitmap source = null;
-
-                if(item.getImage().getName().contains(".crypt"))
-                    source = BitmapFactory.decodeStream(LegacyFileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), password));
-                else
-                    source = BitmapFactory.decodeStream(NewFileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), secretKey.getEncoded()));
-
-                if(source == null){
-                taskResult.setError(true);
-                return null;
-            }
-
-            int size = Math.min(source.getWidth(), source.getHeight());
-            int x = (source.getWidth() - size) / 2;
-            int y = (source.getHeight() - size) / 2;
-            Bitmap result = Bitmap.createScaledBitmap(Bitmap.createBitmap(source, x, y, size, size), size_, size_, false);
-            if (result != source) {
-                source.recycle();
-            }
-
-            if(thumbnail != null){
-                if(thumbnail.getName().contains(".crypt"))
-                    LegacyFileEncryption.encryptImage(result, thumbnail,  password);
-                else
-                    NewFileEncryption.encryptImage(result, thumbnail, secretKey.getEncoded());
-
-            }
-
-            data[2] = result;
-            taskResult.setData(data);
-            }catch (Exception e){
-                e.printStackTrace();
-                taskResult.setError(true);
-            }
-            return null;
-        }
-    };
-
-    static class ViewHolder {
-        TextView imageTitle;
-        ImageView image;
     }
 
     public byte[] getPassword() {
@@ -167,5 +160,10 @@ public class GridViewAdapter extends ArrayAdapter {
 
     public void setPassword(byte[] password) {
         this.password = password;
+    }
+
+    static class ViewHolder {
+        TextView imageTitle;
+        ImageView image;
     }
 }

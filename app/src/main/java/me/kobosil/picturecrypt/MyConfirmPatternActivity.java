@@ -2,7 +2,6 @@ package me.kobosil.picturecrypt;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.text.TextUtils;
 
 import java.util.List;
 

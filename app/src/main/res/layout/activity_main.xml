@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     xmlns:fab="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
@@ -31,41 +31,41 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
+        android:layout_marginBottom="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginRight="16dp"
         fab:fab_addButtonColorNormal="@color/colorAccent"
         fab:fab_addButtonColorPressed="@color/colorAccentDark"
         fab:fab_addButtonPlusIconColor="@color/half_black"
-        fab:fab_labelStyle="@style/menu_labels_style"
         fab:fab_icon="@drawable/ic_note_add_black_24dp"
-        android:layout_marginBottom="16dp"
-        android:layout_marginRight="16dp"
-        android:layout_marginEnd="16dp">
+        fab:fab_labelStyle="@style/menu_labels_style">
 
         <com.getbase.floatingactionbutton.FloatingActionButton
             android:id="@+id/btn_gallery"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             fab:fab_colorNormal="@color/colorAccent"
+            fab:fab_colorPressed="@color/colorAccentDark"
             fab:fab_icon="@drawable/ic_camera_enhance_black_24dp"
-            fab:fab_title="Aus Galerie"
-            fab:fab_colorPressed="@color/colorAccentDark"/>
+            fab:fab_title="Aus Galerie" />
 
         <com.getbase.floatingactionbutton.FloatingActionButton
             android:id="@+id/btn_filesystem"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             fab:fab_colorNormal="@color/colorAccent"
+            fab:fab_colorPressed="@color/colorAccentDark"
             fab:fab_icon="@drawable/ic_attach_file_black_24dp"
-            fab:fab_title="Datei Auswählen"
-            fab:fab_colorPressed="@color/colorAccentDark"/>
+            fab:fab_title="Datei Auswählen" />
 
         <com.getbase.floatingactionbutton.FloatingActionButton
             android:id="@+id/btn_take"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             fab:fab_colorNormal="@color/colorAccent"
+            fab:fab_colorPressed="@color/colorAccentDark"
             fab:fab_icon="@drawable/ic_add_a_photo_black_24dp"
-            fab:fab_title="Foto aufnehmen"
-            fab:fab_colorPressed="@color/colorAccentDark"/>
+            fab:fab_title="Foto aufnehmen" />
 
     </com.getbase.floatingactionbutton.FloatingActionsMenu>
 

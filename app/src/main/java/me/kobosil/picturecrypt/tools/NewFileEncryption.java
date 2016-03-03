@@ -1,7 +1,6 @@
 package me.kobosil.picturecrypt.tools;
 
 import android.graphics.Bitmap;
-import android.provider.Settings;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,15 +10,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
-import java.security.Security;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 
 import javax.crypto.Cipher;
@@ -39,7 +34,7 @@ import me.kobosil.picturecrypt.MainActivity;
  */
 public class NewFileEncryption {
 
-    public static void encrypt(File in, File out,  byte[] keyBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
+    public static void encrypt(File in, File out, byte[] keyBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
         (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
 
         File ivBytesFile = new File(out.getAbsolutePath() + ".iv");
@@ -56,7 +51,7 @@ public class NewFileEncryption {
         CipherOutputStream cos = new CipherOutputStream(fos, cipher);
         int b;
         byte[] d = new byte[8];
-        while((b = fis.read(d)) != -1) {
+        while ((b = fis.read(d)) != -1) {
             cos.write(d, 0, b);
         }
         cos.flush();
@@ -64,7 +59,7 @@ public class NewFileEncryption {
         fis.close();
     }
 
-    public static void decrypt(File in, File out,  byte[] keyBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
+    public static void decrypt(File in, File out, byte[] keyBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
         FileInputStream fis = new FileInputStream(in);
         (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
 
@@ -79,7 +74,7 @@ public class NewFileEncryption {
         CipherInputStream cis = new CipherInputStream(fis, cipher);
         int b;
         byte[] d = new byte[8];
-        while((b = cis.read(d)) != -1) {
+        while ((b = cis.read(d)) != -1) {
             fos.write(d, 0, b);
         }
         fos.flush();
@@ -87,7 +82,7 @@ public class NewFileEncryption {
         cis.close();
     }
 
-    public static CipherInputStream decryptStream(File in,  byte[] keyBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
+    public static CipherInputStream decryptStream(File in, byte[] keyBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
         (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
 
         File ivBytesFile = new File(in.getAbsolutePath() + ".iv");
@@ -101,7 +96,7 @@ public class NewFileEncryption {
         return new CipherInputStream(fis, cipher);
     }
 
-    public static void encryptImage(Bitmap in, File out,  byte[] keyBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
+    public static void encryptImage(Bitmap in, File out, byte[] keyBytes) throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, NoSuchProviderException, InvalidAlgorithmParameterException {
         (new File(MainActivity.getMainActivity().getFilesDir() + "/.crypted/")).mkdirs();
 
         File ivBytesFile = new File(out.getAbsolutePath() + ".iv");
@@ -120,67 +115,59 @@ public class NewFileEncryption {
     }
 
     public static SecretKey getPBKDF2(String passphraseSHA1, byte[] salt, int iterations, int keyLength) {
-       try{
-           SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-           KeySpec keySpec = new PBEKeySpec(passphraseSHA1.toCharArray(), salt, iterations, keyLength);
-           SecretKey secretKey = secretKeyFactory.generateSecret(keySpec);
-           return secretKey;
-       }catch(Exception e){
-           e.printStackTrace();
-       }
+        try {
+            SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+            KeySpec keySpec = new PBEKeySpec(passphraseSHA1.toCharArray(), salt, iterations, keyLength);
+            SecretKey secretKey = secretKeyFactory.generateSecret(keySpec);
+            return secretKey;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
-    public static byte[] readIvBytes(File file)  {
+    public static byte[] readIvBytes(File file) {
         try {
-        byte[] buffer = new byte[(int) file.length()];
-        InputStream ios = null;
-        try {
-            ios = new FileInputStream(file);
-            if (ios.read(buffer) == -1) {
-                throw new IOException(
-                        "EOF reached while trying to read the whole file");
-            }
-        } finally {
+            byte[] buffer = new byte[(int) file.length()];
+            InputStream ios = null;
             try {
-                if (ios != null)
-                    ios.close();
-            } catch (IOException e) {
+                ios = new FileInputStream(file);
+                if (ios.read(buffer) == -1) {
+                    throw new IOException(
+                            "EOF reached while trying to read the whole file");
+                }
+            } finally {
+                try {
+                    if (ios != null)
+                        ios.close();
+                } catch (IOException e) {
+                }
             }
-        }
             return buffer;
-        }
-        catch(IOException ioe)
-        {
+        } catch (IOException ioe) {
             System.out.println("IOException : " + ioe);
         }
         return null;
     }
 
-    public static void writeIvBytes(File file, byte[] ivBytes){
+    public static void writeIvBytes(File file, byte[] ivBytes) {
         try {
             FileOutputStream fos = new FileOutputStream(file);
             fos.write(ivBytes);
             fos.close();
-        }
-        catch(FileNotFoundException ex)
-        {
+        } catch (FileNotFoundException ex) {
             System.out.println("FileNotFoundException : " + ex);
-        }
-        catch(IOException ioe)
-        {
+        } catch (IOException ioe) {
             System.out.println("IOException : " + ioe);
         }
     }
 
-    public static byte[] getIvBytes(){
+    public static byte[] getIvBytes() {
         try {
             SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
             sr.setSeed((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).getBytes("us-ascii"));
             return sr.generateSeed(16);
-        }
-        catch(Exception ex)
-        {
+        } catch (Exception ex) {
             System.out.println("Exception : " + ex);
         }
         return null;

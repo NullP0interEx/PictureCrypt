@@ -13,6 +13,6 @@
         <!-- Defines the error color. -->
         <attr name="pl_errorColor" format="color|reference" />
         <!-- Defines the success color. -->
-        <attr name="pl_successColor" format="color|reference"/>
+        <attr name="pl_successColor" format="color|reference" />
     </declare-styleable>
 </resources>
