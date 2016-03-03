@@ -46,7 +46,8 @@ import me.kobosil.picturecrypt.async.TaskResult;
 import me.kobosil.picturecrypt.async.interfaces.AsyncCallBack;
 import me.kobosil.picturecrypt.async.interfaces.CustomAsyncTask;
 import me.kobosil.picturecrypt.models.ImageItem;
-import me.kobosil.picturecrypt.tools.FileEncryption;
+import me.kobosil.picturecrypt.tools.LegacyFileEncryption;
+import me.kobosil.picturecrypt.tools.NewFileEncryption;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -228,7 +229,12 @@ public class MainActivity extends AppCompatActivity {
                 byte[] password = (byte[])data[2];
 
                 try{
-                    FileEncryption.encryptImage((Bitmap)data[0], selectedOut,  password);
+
+                    if(selectedOut.getName().contains(".crypt"))
+                        LegacyFileEncryption.encryptImage((Bitmap)data[0], selectedOut,  password);
+                    else
+                        NewFileEncryption.encryptImage((Bitmap)data[0], selectedOut, NewFileEncryption.keyBytes, NewFileEncryption.ivBytes);
+
                 }catch (Exception e){
                     taskResult.setError(true);
                     e.printStackTrace();
@@ -241,7 +247,12 @@ public class MainActivity extends AppCompatActivity {
             byte[] password = (byte[])data[2];
 
             try{
-                FileEncryption.encryptImage(BitmapFactory.decodeStream(new FileInputStream(selectedImage)), selectedOut,  password);
+                if(selectedOut.getName().contains(".crypt"))
+                    LegacyFileEncryption.encryptImage(BitmapFactory.decodeStream(new FileInputStream(selectedImage)), selectedOut,  password);
+                else
+                    NewFileEncryption.encryptImage(BitmapFactory.decodeStream(new FileInputStream(selectedImage)), selectedOut, NewFileEncryption.keyBytes, NewFileEncryption.ivBytes);
+
+
             }catch (Exception e){
                 taskResult.setError(true);
                 e.printStackTrace();
@@ -273,7 +284,7 @@ public class MainActivity extends AppCompatActivity {
             case 1:
                 if(resultCode == Activity.RESULT_OK){
                     String pattern = data.getStringExtra("pattern");
-                    this.password = FileEncryption.getHash(pattern);
+                    this.password = LegacyFileEncryption.getHash(pattern);
                     if(!waitingImageUris.isEmpty()){
                         for(Uri uri : waitingImageUris)
                             startEncryptionFromUri(uri);

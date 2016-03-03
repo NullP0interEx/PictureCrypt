@@ -21,7 +21,8 @@ import me.kobosil.picturecrypt.async.TaskResult;
 import me.kobosil.picturecrypt.async.interfaces.AsyncCallBack;
 import me.kobosil.picturecrypt.async.interfaces.CustomAsyncTask;
 import me.kobosil.picturecrypt.models.ImageItem;
-import me.kobosil.picturecrypt.tools.FileEncryption;
+import me.kobosil.picturecrypt.tools.LegacyFileEncryption;
+import me.kobosil.picturecrypt.tools.NewFileEncryption;
 
 /**
  * Created by roman on 01.03.2016.
@@ -113,9 +114,14 @@ public class GridViewAdapter extends ArrayAdapter {
             (new File(item.getImage().getAbsolutePath().substring(0,item.getImage().getAbsolutePath().lastIndexOf(File.separator)) + "/thumbnail/")).mkdirs();
             File thumbnail = new File(item.getImage().getAbsolutePath().substring(0,item.getImage().getAbsolutePath().lastIndexOf(File.separator)) + "/thumbnail/mini_" + item.getImage().getName());
 
-            Bitmap source = BitmapFactory.decodeStream(FileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), password));
+            Bitmap source = null;
 
-            if(source == null){
+                if(item.getImage().getName().contains(".crypt"))
+                    source = BitmapFactory.decodeStream(LegacyFileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), password));
+                else
+                    source = BitmapFactory.decodeStream(NewFileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), NewFileEncryption.keyBytes, NewFileEncryption.ivBytes));
+
+                if(source == null){
                 taskResult.setError(true);
                 return null;
             }
@@ -129,7 +135,11 @@ public class GridViewAdapter extends ArrayAdapter {
             }
 
             if(thumbnail != null){
-                FileEncryption.encryptImage(result, thumbnail,  password);
+                if(thumbnail.getName().contains(".crypt"))
+                    LegacyFileEncryption.encryptImage(result, thumbnail,  password);
+                else
+                    NewFileEncryption.encryptImage(result, thumbnail, NewFileEncryption.keyBytes, NewFileEncryption.ivBytes);
+
             }
 
             data[2] = result;

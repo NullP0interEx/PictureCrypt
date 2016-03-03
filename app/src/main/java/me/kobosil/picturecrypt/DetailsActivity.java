@@ -13,7 +13,8 @@ import me.kobosil.picturecrypt.async.MyAsyncTask;
 import me.kobosil.picturecrypt.async.TaskResult;
 import me.kobosil.picturecrypt.async.interfaces.AsyncCallBack;
 import me.kobosil.picturecrypt.async.interfaces.CustomAsyncTask;
-import me.kobosil.picturecrypt.tools.FileEncryption;
+import me.kobosil.picturecrypt.tools.LegacyFileEncryption;
+import me.kobosil.picturecrypt.tools.NewFileEncryption;
 import me.kobosil.picturecrypt.tools.ZoomableImageView;
 
 public class DetailsActivity extends AppCompatActivity {
@@ -76,7 +77,11 @@ public class DetailsActivity extends AppCompatActivity {
             byte[] password = (byte[])data[2];
 
             try{
-                Bitmap image = BitmapFactory.decodeStream(FileEncryption.decryptStream((new File(file)), password));
+                Bitmap image = null;
+                if(file.contains(".crypt"))
+                    image = BitmapFactory.decodeStream(LegacyFileEncryption.decryptStream((new File(file)), password));
+                else
+                    image = BitmapFactory.decodeStream(NewFileEncryption.decryptStream((new File(file)), NewFileEncryption.keyBytes, NewFileEncryption.ivBytes));
                 if(image == null)
                     taskResult.setError(true);
                 data[2] = image;

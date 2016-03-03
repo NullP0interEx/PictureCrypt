@@ -4,7 +4,6 @@ import android.util.Log;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.StringTokenizer;
 
 import me.kobosil.picturecrypt.MainActivity;
 import me.kobosil.picturecrypt.async.MyAsyncTask;
@@ -51,7 +50,7 @@ public class DirectoryCrypter {
             File file_out = new File(myDir + "/" + file.getName() +".crypt");
             taskResult.setData(file_out);
             try {
-                FileEncryption.encrypt(file, file_out, password);
+                LegacyFileEncryption.encrypt(file, file_out, password);
                 Log.d("fcrypt", "encrypted " + file_out.getAbsolutePath());
             }catch (Exception e){
                 e.printStackTrace();
@@ -82,7 +81,7 @@ public class DirectoryCrypter {
     }
 
     public void setPassword(String password){
-        this.password = FileEncryption.getHash(password);
+        this.password = LegacyFileEncryption.getHash(password);
     }
 
     public void setPassword(byte[] password){

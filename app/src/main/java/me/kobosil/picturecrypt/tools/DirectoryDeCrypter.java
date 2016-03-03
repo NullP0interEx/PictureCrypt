@@ -53,7 +53,7 @@ public class DirectoryDeCrypter {
             File file_out = new File(myDir + "/" + file.getName().replace(".crypt", ""));
             taskResult.setData(file_out);
             try {
-                FileEncryption.decrypt(file, file_out, password);
+                LegacyFileEncryption.decrypt(file, file_out, password);
                 Log.d("fcrypt", "decrypted " + file_out.getAbsolutePath());
             }catch (Exception e){
                 e.printStackTrace();
@@ -84,7 +84,7 @@ public class DirectoryDeCrypter {
     }
 
     public void setPassword(String password){
-        this.password = FileEncryption.getHash(password);
+        this.password = LegacyFileEncryption.getHash(password);
     }
 
     public File getMyDir() {
