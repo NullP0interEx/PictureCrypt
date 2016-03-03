@@ -67,7 +67,7 @@ public class GridViewAdapter extends ArrayAdapter {
 
                 Bitmap source = null;
 
-                if (item.getImage().getName().contains(".crypt"))
+                if (item.getImage().getName().endsWith(".crypt"))
                     source = BitmapFactory.decodeStream(LegacyFileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), password));
                 else
                     source = BitmapFactory.decodeStream(NewFileEncryption.decryptStream((thumbnail.exists() ? thumbnail : item.getImage()), secretKey.getEncoded()));
@@ -86,7 +86,7 @@ public class GridViewAdapter extends ArrayAdapter {
                 }
 
                 if (thumbnail != null) {
-                    if (thumbnail.getName().contains(".crypt"))
+                    if (thumbnail.getName().endsWith(".crypt"))
                         LegacyFileEncryption.encryptImage(result, thumbnail, password);
                     else
                         NewFileEncryption.encryptImage(result, thumbnail, secretKey.getEncoded());

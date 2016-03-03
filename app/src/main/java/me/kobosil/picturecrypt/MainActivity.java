@@ -61,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     static final int FILE_CODE = 3;
     private static final int SELECT_PHOTO = 100;
     private static AppCompatActivity mainActivity;
+    private static SecureRandom sr;
     private GridView gridView;
     private GridViewAdapter gridAdapter;
     private ProgressBar spinner;
@@ -99,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
 
                 try {
 
-                    if (selectedOut.getName().contains(".crypt"))
+                    if (selectedOut.getName().endsWith(".crypt"))
                         LegacyFileEncryption.encryptImage((Bitmap) data[0], selectedOut, password);
                     else
                         NewFileEncryption.encryptImage((Bitmap) data[0], selectedOut, secretKey.getEncoded());
@@ -116,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
             byte[] password = (byte[]) data[2];
 
             try {
-                if (selectedOut.getName().contains(".crypt"))
+                if (selectedOut.getName().endsWith(".crypt"))
                     LegacyFileEncryption.encryptImage(BitmapFactory.decodeStream(new FileInputStream(selectedImage)), selectedOut, password);
                 else
                     NewFileEncryption.encryptImage(BitmapFactory.decodeStream(new FileInputStream(selectedImage)), selectedOut, secretKey.getEncoded());
@@ -165,18 +166,12 @@ public class MainActivity extends AppCompatActivity {
         spinner = (ProgressBar) findViewById(R.id.loadingP);
         loadingText = (TextView) findViewById(R.id.loadingText);
 
-        SharedPreferences prefs = this.getSharedPreferences("me.kobosil.picturecrypt", Context.MODE_PRIVATE);
-        if (!prefs.contains("crypto.salt.seed")) {
-            try {
-                SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-                sr.setSeed((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).getBytes("us-ascii"));
-                prefs.edit().putString("crypto.salt.seed", Base64.encodeToString(sr.generateSeed(16), Base64.DEFAULT)).apply();
-            } catch (Exception ex) {
-                System.out.println("Exception : " + ex);
-            }
+        try {
+            sr = SecureRandom.getInstance("SHA1PRNG");
+        }catch(Exception e){
+
         }
-
-
+        setSeed();
         final FloatingActionButton btn_filesystem = (FloatingActionButton) findViewById(R.id.btn_filesystem);
         btn_filesystem.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -287,6 +282,17 @@ public class MainActivity extends AppCompatActivity {
 
         Intent i = new Intent(this, MyConfirmPatternActivity.class);
         startActivityForResult(i, 1);
+    }
+
+    private void setSeed(){
+        SharedPreferences prefs = this.getSharedPreferences("me.kobosil.picturecrypt", Context.MODE_PRIVATE);
+        if (!prefs.contains("crypto.salt.seed")) {
+            try {
+                prefs.edit().putString("crypto.salt.seed", Base64.encodeToString(sr.generateSeed(16), Base64.DEFAULT)).apply();
+            } catch (Exception ex) {
+                System.out.println("Exception : " + ex);
+            }
+        }
     }
 
     void handleSendImage(Intent intent) {
@@ -501,5 +507,9 @@ public class MainActivity extends AppCompatActivity {
             spinner.setVisibility(View.GONE);
             loadingText.setVisibility(View.GONE);
         }
+    }
+
+    public static SecureRandom getSr() {
+        return sr;
     }
 }

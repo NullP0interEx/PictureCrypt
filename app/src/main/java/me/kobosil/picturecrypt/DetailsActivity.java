@@ -48,7 +48,7 @@ public class DetailsActivity extends AppCompatActivity {
 
             try {
                 Bitmap image = null;
-                if ((new File(file)).getName().contains(".crypt"))
+                if ((new File(file)).getName().endsWith(".crypt"))
                     image = BitmapFactory.decodeStream(LegacyFileEncryption.decryptStream((new File(file)), password));
                 else
                     image = BitmapFactory.decodeStream(NewFileEncryption.decryptStream((new File(file)), secretKey));

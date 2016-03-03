@@ -164,8 +164,10 @@ public class NewFileEncryption {
 
     public static byte[] getIvBytes() {
         try {
-            SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-            sr.setSeed((new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())).getBytes("us-ascii"));
+
+            SecureRandom sr = MainActivity.getSr();
+            if(sr == null)
+                sr = SecureRandom.getInstance("SHA1PRNG");
             return sr.generateSeed(16);
         } catch (Exception ex) {
             System.out.println("Exception : " + ex);
